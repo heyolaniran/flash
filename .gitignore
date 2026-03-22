@@ -34,6 +34,7 @@ generated.gql
 
 .envrc.secrets
 .envrc.local
+.env.local
 
 # bats e2e tests
 -

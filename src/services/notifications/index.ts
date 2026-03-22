@@ -3,7 +3,7 @@ import { WalletCurrency } from "@domain/shared"
 import { toCents, UsdDisplayCurrency } from "@domain/fiat"
 import { customPubSubTrigger, PubSubDefaultTriggers, PubSubServiceError } from "@domain/pubsub"
 import {
-  GaloyNotificationCategories,
+  FlashNotificationCategories,
   NotificationsServiceError,
   NotificationType,
 } from "@domain/notifications"
@@ -59,7 +59,7 @@ export const NotificationsService = (): INotificationsService => {
       })
 
       if (recipientDeviceTokens && recipientDeviceTokens.length > 0) {
-        const notificationCategory = GaloyNotificationCategories.Payments
+        const notificationCategory = FlashNotificationCategories.Payments
 
         const { title, body } = createPushNotificationContent({
           type: NotificationType.LnInvoicePaid,
@@ -129,7 +129,7 @@ export const NotificationsService = (): INotificationsService => {
       })
 
       if (recipientDeviceTokens && recipientDeviceTokens.length > 0) {
-        const notificationCategory = GaloyNotificationCategories.Payments
+        const notificationCategory = FlashNotificationCategories.Payments
 
         const { title, body } = createPushNotificationContent({
           type: NotificationType.IntraLedgerReceipt,
@@ -207,7 +207,7 @@ export const NotificationsService = (): INotificationsService => {
       })
 
       if (deviceTokens.length > 0) {
-        const notificationCategory = GaloyNotificationCategories.Payments
+        const notificationCategory = FlashNotificationCategories.Payments
 
         const { title, body } = createPushNotificationContent({
           type,
@@ -346,7 +346,7 @@ export const NotificationsService = (): INotificationsService => {
     if (!hasDeviceTokens) return true
 
     try {
-      const notificationCategory = GaloyNotificationCategories.Payments
+      const notificationCategory = FlashNotificationCategories.Payments
 
       const { title, body } = createPushNotificationContent({
         type: "balance",

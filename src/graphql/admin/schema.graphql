@@ -30,6 +30,11 @@ input AccountUpdateStatusInput {
   uid: ID!
 }
 
+type AdminPushNotificationSendPayload {
+  errors: [Error!]!
+  success: Boolean
+}
+
 """
 Accounts are core to the Galoy architecture. they have users, and own wallets
 """
@@ -118,6 +123,12 @@ input BusinessUpdateMapInfoInput {
   longitude: Float!
   title: String!
   username: Username!
+}
+
+input CashoutNotificationSendInput {
+  accountId: String!
+  amount: Float!
+  currency: String!
 }
 
 type Coordinates {
@@ -256,6 +267,7 @@ type Mutation {
   accountUpdateStatus(input: AccountUpdateStatusInput!): AccountDetailPayload!
   businessDeleteMapInfo(input: BusinessDeleteMapInfoInput!): AccountDetailPayload!
   businessUpdateMapInfo(input: BusinessUpdateMapInfoInput!): AccountDetailPayload!
+  cashoutNotificationSend(input: CashoutNotificationSendInput!): AdminPushNotificationSendPayload!
   merchantMapDelete(input: MerchantMapDeleteInput!): MerchantPayload!
   merchantMapValidate(input: MerchantMapValidateInput!): MerchantPayload!
   sendNotification(input: SendNotificationInput!): SendNotificationPayload!
