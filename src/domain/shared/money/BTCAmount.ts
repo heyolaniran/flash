@@ -27,6 +27,9 @@ export class BtcAmount extends MoneyAmount {
   }
 
   i18n(): string {
-    throw new Error("Method not implemented.")
+    return new Intl.NumberFormat("en", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    }).format(Number(this.asSats())) + " sats";
   }
 }

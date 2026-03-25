@@ -2,6 +2,8 @@ import Money, { Round } from "../bigint-money"
 import { MoneyAmount } from "./MoneyAmount"
 import { WalletCurrency } from "../primitives"
 import { BigIntConversionError } from "../errors"
+import { getCurrencyMajorExponent } from "@domain/fiat/display-currency"
+
 
 export class JMDAmount extends MoneyAmount {
   currencyCode = WalletCurrency.Jmd as WalletCurrency
@@ -40,6 +42,13 @@ export class JMDAmount extends MoneyAmount {
   }
 
   i18n(): string {
-    throw new Error("Method not implemented.")
+    const exponent = getCurrencyMajorExponent(this.currencyCode as DisplayCurrency);
+    return new Intl.NumberFormat("en", {
+        style: "currency",
+        currency: this.currencyCode,
+        currencyDisplay: "narrowSymbol",
+        minimumFractionDigits: exponent,
+        maximumFractionDigits: exponent,
+    }).format(Number(this.asDollars()));
   }
 }

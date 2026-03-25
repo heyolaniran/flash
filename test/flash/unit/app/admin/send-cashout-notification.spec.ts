@@ -1,105 +1,97 @@
-
-import { FlashNotificationCategories } from "@domain/notifications"
 import { sendCashoutNotification } from "@app/admin/send-cashout-notification"
-import { NotificationsService } from "@services/notifications"
-import { AccountsRepository, UsersRepository } from "@services/mongoose"
-import { checkedToDeviceToken } from "@domain/users"
+import { AccountsRepository } from "@services/mongoose/accounts"
+import { UsersRepository } from "@services/mongoose/users"
+import { PushNotificationsService } from "@services/notifications/push-notifications"
+import { getI18nInstance } from "@config"
 
-jest.mock("@services/notifications", () => ({
-    NotificationsService: jest.fn(),
+jest.mock("@services/mongoose/accounts", () => ({
+    AccountsRepository: jest.fn(),
 }))
 
-jest.mock("@services/mongoose", () => ({
-    AccountsRepository: jest.fn(),
+jest.mock("@services/mongoose/users", () => ({
     UsersRepository: jest.fn(),
 }))
 
-jest.mock("@domain/accounts", () => ({
-    checkedToAccountUuid: (id: string) => id
+jest.mock("@services/notifications/push-notifications", () => ({
+    PushNotificationsService: jest.fn(),
 }))
 
-jest.mock("@domain/users", () => ({
-    checkedToDeviceToken: (token: string) => token as DeviceToken
-}))
+jest.mock("@config", () => {
+    const mockI18n = {
+        __: jest.fn().mockImplementation(({ phrase }, options) => `${phrase} ${JSON.stringify(options)}`),
+    }
+    return {
+        getI18nInstance: jest.fn(() => mockI18n),
+    }
+})
 
 describe("sendCashoutNotification", () => {
     const accountId = "account-id" as AccountUuid
-    const title = "Test Title"
-    const body = "Test Body"
-    const amount = 100
-    const currency = "USD"
+    const amount = { 
+        currencyCode: "USD", 
+        i18n: () => "1.00 USD", 
+        toString: () => "100" 
+    } as any // MoneyAmount
 
     const mockAccount = {
         uuid: accountId,
         kratosUserId: "user-id",
-        notificationSettings: {
-            push: {
-                enabled: true,
-                disabledCategories: [],
-            }
-        }
     }
 
     const mockUser = {
-        deviceTokens: ["override-token"] as DeviceToken[],
+        deviceTokens: ["token-1", "token-2"],
     }
 
-    const adminPushNotificationFilteredSend = jest.fn().mockResolvedValue(true)
+    const sendNotification = jest.fn().mockReturnValue(true)
+    const mockI18n = getI18nInstance()
 
     beforeEach(() => {
         jest.clearAllMocks()
-            ; (NotificationsService as jest.Mock).mockReturnValue({
-                adminPushNotificationFilteredSend,
-            })
-            ; (AccountsRepository as jest.Mock).mockReturnValue({
-                findByUuid: jest.fn().mockResolvedValue(mockAccount),
-            })
-            ; (UsersRepository as jest.Mock).mockReturnValue({
-                findById: jest.fn().mockResolvedValue(mockUser),
-            })
+        ; (AccountsRepository as jest.Mock).mockReturnValue({
+            findByUuid: jest.fn().mockResolvedValue(mockAccount),
+        })
+        ; (UsersRepository as jest.Mock).mockReturnValue({
+            findById: jest.fn().mockResolvedValue(mockUser),
+        })
+        ; (PushNotificationsService as jest.Mock).mockReturnValue({
+            sendNotification,
+        })
+        ; (getI18nInstance as jest.Mock).mockReturnValue(mockI18n)
     })
 
     it("sends notification to user device tokens", async () => {
-        const result = await sendCashoutNotification({
-            accountId,
-            title,
-            body,
-            amount,
-            currency,
-        })
+        const result = await sendCashoutNotification(accountId, amount)
 
         expect(result).toBe(true)
-        expect(adminPushNotificationFilteredSend).toHaveBeenCalledWith({
+        expect(sendNotification).toHaveBeenCalledWith({
             deviceTokens: mockUser.deviceTokens,
-            title,
-            body,
-            data: { amount: "100", currency },
-            notificationCategory: FlashNotificationCategories.Cashout,
-            notificationSettings: mockAccount.notificationSettings,
+            title: mockI18n.__({ phrase: "notification.cashout.title", locale: "en" }, { currency: amount.currencyCode }),
+            body: mockI18n.__({ phrase: "notification.cashout.body", locale: "en" }, { amount: amount.i18n() }),
+            data: { amount: String(amount), currency: amount.currencyCode },
         })
     })
 
-    it("sends notification to provided device tokens override", async () => {
-        const overrideTokens = ["override-token"] // paste given device token here
-        const result = await sendCashoutNotification({
-            accountId,
-            title,
-            body,
-            amount,
-            currency,
-            deviceTokens: overrideTokens
+    it("returns error if account is not found", async () => {
+        const error = new Error("Account not found")
+        ; (AccountsRepository as jest.Mock).mockReturnValue({
+            findByUuid: jest.fn().mockResolvedValue(error),
         })
 
-        expect(result).toBe(true)
-        expect(adminPushNotificationFilteredSend).toHaveBeenCalledWith({
-            deviceTokens: [checkedToDeviceToken(overrideTokens[0])],
-            title,
-            body,
-            data: { amount: "100", currency },
-            notificationCategory: FlashNotificationCategories.Cashout,
-            notificationSettings: mockAccount.notificationSettings,
+        const result = await sendCashoutNotification(accountId, amount)
+
+        expect(result).toBe(error)
+        expect(sendNotification).not.toHaveBeenCalled()
+    })
+
+    it("returns error if user is not found", async () => {
+        const error = new Error("User not found")
+        ; (UsersRepository as jest.Mock).mockReturnValue({
+            findById: jest.fn().mockResolvedValue(error),
         })
-        // Should NOT call UsersRepository if tokens are provided
-        expect(UsersRepository).not.toHaveBeenCalled()
+
+        const result = await sendCashoutNotification(accountId, amount)
+
+        expect(result).toBe(error)
+        expect(sendNotification).not.toHaveBeenCalled()
     })
 })
