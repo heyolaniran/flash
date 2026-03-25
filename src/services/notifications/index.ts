@@ -394,37 +394,6 @@ export const NotificationsService = (): INotificationsService => {
     }
   }
 
-  const adminPushNotificationFilteredSend = async ({
-    title,
-    body,
-    data,
-    deviceTokens,
-    notificationSettings,
-    notificationCategory,
-  }: SendFilteredPushNotificationArgs): Promise<true | NotificationsServiceError> => {
-    const hasDeviceTokens = deviceTokens && deviceTokens.length > 0
-    if (!hasDeviceTokens) return true
-
-    try {
-      const result = await pushNotification.sendFilteredNotification({
-        deviceTokens,
-        title,
-        body,
-        data,
-        notificationSettings,
-        notificationCategory,
-      })
-
-      if (result instanceof NotificationsServiceError) {
-        return result
-      }
-
-      return true
-    } catch (err) {
-      return handleCommonNotificationErrors(err)
-    }
-  }
-
   // trace everything except price update because it runs every 30 seconds
   return {
     priceUpdate,
@@ -438,7 +407,6 @@ export const NotificationsService = (): INotificationsService => {
         onChainTxSent,
         sendBalance,
         adminPushNotificationSend,
-        adminPushNotificationFilteredSend,
       },
     }),
   }

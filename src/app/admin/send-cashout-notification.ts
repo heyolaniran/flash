@@ -1,62 +1,36 @@
-import { checkedToAccountUuid } from "@domain/accounts"
-import { checkedToNotificationCategory, FlashNotificationCategories } from "@domain/notifications"
-import { checkedToDeviceToken } from "@domain/users"
-import { AccountsRepository, UsersRepository } from "@services/mongoose"
-import { NotificationsService } from "@services/notifications"
+import { getI18nInstance } from "@config"
+import {
+  NotificationsServiceError,
+} from "@domain/notifications"
+import { MoneyAmount } from "@domain/shared"
+import { AccountsRepository } from "@services/mongoose/accounts"
+import { UsersRepository } from "@services/mongoose/users"
+import { PushNotificationsService } from "@services/notifications/push-notifications"
+
+const i18n = getI18nInstance();
 
 export const sendCashoutNotification = async (
-    {
-        accountId: accountIdRaw,
-        title,
-        body,
-        amount,
-        currency,
-        notificationCategory,
-        deviceTokens
-    }: {
-        accountId: string,
-        title: string,
-        body: string,
-        amount: number,
-        currency: string,
-        notificationCategory?: string,
-        deviceTokens?: string[]
-    }): Promise<true | ApplicationError> => {
+  accountId: AccountUuid,
+  amount: MoneyAmount,
+): Promise<true | ApplicationError> => {
+  const accountsRepo = AccountsRepository()
+  const account = await accountsRepo.findByUuid(accountId)
+  if (account instanceof Error) return account
+  const kratosUserId = account.kratosUserId
 
-    const checkedNotificationCategory = notificationCategory ? checkedToNotificationCategory(notificationCategory) : FlashNotificationCategories.Cashout
+  const usersRepo = UsersRepository()
+  const user = await usersRepo.findById(kratosUserId)
+  if (user instanceof Error) return user
 
-    if (checkedNotificationCategory instanceof Error) return checkedNotificationCategory
+  const currency = amount.currencyCode
 
-    const accountId = checkedToAccountUuid(accountIdRaw)
-    if (accountId instanceof Error) return accountId
+  const result = PushNotificationsService().sendNotification({
+    deviceTokens: user.deviceTokens,
+    title: i18n.__({ phrase: "notification.cashout.title", locale: "en" }, { currency }),
+    body: i18n.__({ phrase: "notification.cashout.body", locale: "en" }, { amount: amount.i18n() }),
+    data: { amount: String(amount), currency },
+  })
+  if (result instanceof NotificationsServiceError) return result
 
-    const accountsRepo = AccountsRepository()
-    const account = await accountsRepo.findByUuid(accountId)
-    if (account instanceof Error) return account
-    const kratosUserId = account.kratosUserId
-
-    let tokens: DeviceToken[] = []
-    if (deviceTokens && deviceTokens.length > 0) {
-        for (const token of deviceTokens) {
-            const checkedToken = await checkedToDeviceToken(token)
-            if (checkedToken instanceof Error) return checkedToken
-            tokens.push(checkedToken)
-        }
-    } else {
-        const usersRepo = UsersRepository()
-        const user = await usersRepo.findById(kratosUserId)
-        if (user instanceof Error) return user
-        tokens = user.deviceTokens
-    }
-
-    const success = await NotificationsService().adminPushNotificationFilteredSend({
-        deviceTokens: tokens,
-        title,
-        body,
-        data: { amount: amount.toString(), currency },
-        notificationCategory: checkedNotificationCategory,
-        notificationSettings: account.notificationSettings,
-    })
-
-    return success
+  return result
 }
