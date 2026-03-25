@@ -38,8 +38,7 @@
       }
     },
     "cashout": {
-      "body": "Your cashout of {{baseCurrencyAmount}} {{currency}} has been deposited to your bank account.",
-      "bodyDisplayCurrency": "Your cashout of +{{baseCurrencyAmount}}({{displayCurrencyAmount}}) {{currency}} has been deposited to your bank account.",
+      "body": "Your cashout of {{amount}} has been deposited to your bank account.",
       "title": "{{currency}} Cashout"
     }
   }
