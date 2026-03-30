@@ -3,6 +3,19 @@ BIN_DIR=node_modules/.bin
 start-deps:
 	docker compose up bats-deps -d
 
+start-frappe:
+	./dev/erpnext/start.sh
+
+stop-frappe:
+	docker compose down frappe
+
+reset-frappe:
+	./dev/erpnext/clean.sh
+	./dev/erpnext/start.sh
+	@echo "Waiting for frappe-create-site to finish..."
+	@exit_code=$$(docker wait flash-frappe-create-site-1); if [ "$$exit_code" != "0" ]; then echo "frappe-create-site failed (exit code $$exit_code). Check logs: docker logs flash-frappe-create-site-1"; exit 1; fi
+	./dev/erpnext/restore.sh dev/erpnext/backups/20260123_132015-frontend-database.sql.gz
+
 start-deps-integration:
 	docker compose up integration-deps -d
 
@@ -11,14 +24,14 @@ update-price-history:
 
 start-main:
 	. ./.env && yarn tsnd --respawn --files -r tsconfig-paths/register -r src/services/tracing.ts \
-		src/servers/graphql-main-server.ts --configPath ./dev/defaults.yaml $(CONFIG_PATH)/dev-overrides.yaml | yarn pino-pretty -c -l
+		src/servers/graphql-main-server.ts --configPath ./dev/config/base-config.yaml $(CONFIG_PATH)/dev-overrides.yaml | yarn pino-pretty -c -l
 
 start-main-fast:
 	yarn run watch-main | yarn pino-pretty -c -l
 
 start-trigger:
 	. ./.env && yarn tsnd --respawn --files -r tsconfig-paths/register -r src/services/tracing.ts \
-		src/servers/trigger.ts --configPath ./dev/defaults.yaml $(CONFIG_PATH)/dev-overrides.yaml | yarn pino-pretty -c -l
+		src/servers/trigger.ts --configPath ./dev/config/base-config.yaml $(CONFIG_PATH)/dev-overrides.yaml | yarn pino-pretty -c -l
 
 start-cron: start-deps
 	. ./.env && yarn tsnd --files -r tsconfig-paths/register -r src/services/tracing.ts \
@@ -26,11 +39,11 @@ start-cron: start-deps
 
 start-ws:
 	. ./.env && yarn tsnd --respawn --files -r tsconfig-paths/register -r src/services/tracing.ts \
-		src/servers/ws-server.ts --configPath ./dev/defaults.yaml $(CONFIG_PATH)/dev-overrides.yaml | yarn pino-pretty -c -l
+		src/servers/ws-server.ts --configPath ./dev/config/base-config.yaml $(CONFIG_PATH)/dev-overrides.yaml | yarn pino-pretty -c -l
 
 start-ibex-wh:
 	. ./.env && yarn tsnd --respawn --files -r tsconfig-paths/register -r src/services/tracing.ts \
-		src/servers/ibex-webhook-server.ts --configPath ./dev/defaults.yaml $(CONFIG_PATH)/dev-overrides.yaml | yarn pino-pretty -c -l
+		src/servers/ibex-webhook-server.ts --configPath ./dev/config/base-config.yaml $(CONFIG_PATH)/dev-overrides.yaml | yarn pino-pretty -c -l
 
 start-loopd:
 	./dev/bin/start-loopd.sh

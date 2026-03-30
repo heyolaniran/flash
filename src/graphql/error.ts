@@ -14,7 +14,7 @@ export class CustomApolloError extends ApolloError {
     message,
     code,
     forwardToClient,
-    logger,
+    logger = baseLogger,
     level,
     ...metadata
   }: CustomApolloErrorData & { code: string }) {
@@ -466,3 +466,17 @@ export class IbexError extends CustomApolloError {
     })
   }
 }
+
+export class InternalServerError extends CustomApolloError {
+  constructor(errData: CustomApolloErrorData) {
+    super({ level: "error", code: "INTERNAL_SERVER_ERROR", forwardToClient: false, ...errData })
+  }
+}
+
+// Admin API error
+export class PushNotificationError extends CustomApolloError {
+  constructor(errData: CustomApolloErrorData) {
+    super({ level: "error", code: "FIREBASE_ERROR", forwardToClient: true, ...errData })
+  }
+}
+

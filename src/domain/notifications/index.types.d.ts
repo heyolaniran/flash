@@ -53,6 +53,13 @@ type PriceUpdateArgs<C extends DisplayCurrency> = {
   pricePerUsdCent: RealTimePrice<C>
 }
 
+type SendBroadcastArgs = {
+  deviceTokens: DeviceToken[]
+  title: string
+  body: string
+  data?: { [key: string]: string }
+}
+
 interface INotificationsService {
   // ibexTxReceived: (args: any) => Promise<true | NotificationsServiceError>
 
@@ -84,6 +91,8 @@ interface INotificationsService {
 
 type NotificationChannel =
   (typeof import("./index").NotificationChannel)[keyof typeof import("./index").NotificationChannel]
+
+type NotificationTopic = string & { readonly brand: unique symbol }
 
 type NotificationSettings = Record<NotificationChannel, NotificationChannelSettings>
 

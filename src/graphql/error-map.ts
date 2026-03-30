@@ -712,8 +712,13 @@ export const mapError = (error: ApplicationError): CustomApolloError => {
     case "UnknownDomainError":
     case "UnknownBriaEventError":
     case "CouldNotFindAccountError":
+    case "UpgradeRequestCreateError":
       message = `Unknown error occurred (code: ${error.name})`
       return new UnknownClientError({ message, logger: baseLogger })
+
+    case "UpgradeRequestQueryError":
+      message = "No upgrade request found for this account"
+      return new NotFoundError({ message, logger: baseLogger })
 
     case "UnknownCaptchaError":
       message = `Unknown error occurred (code: ${error.name}${
@@ -726,13 +731,25 @@ export const mapError = (error: ApplicationError): CustomApolloError => {
   }
 }
 
+// Move to CustomApolloError class?
+export const apolloErrorResponse = (e: CustomApolloError): { errors: IError[] } => { 
+  return {
+    errors: [
+      {
+        message: e.message,
+        path: e.path,
+        code: e.extensions.code 
+      }
+    ]
+  }
+}
 
 export const mapAndParseErrorForGqlResponse = (err: ApplicationError): IError => {
   const mappedError = mapError(err)
   return {
     message: mappedError.message,
     path: mappedError.path,
-    code: mappedError.extensions.code,
+    code: mappedError.extensions.code 
   }
 }
 

@@ -1,4 +1,5 @@
 import { InvalidPushNotificationSettingError as InvalidNotificationSettingsError } from "./errors"
+import { getNotificationTopics } from "@config"
 
 export * from "./errors"
 
@@ -171,4 +172,16 @@ export const shouldSendNotification = ({
   }
 
   return false
+}
+
+export const checkedToNotificationTopic = (
+  t: string,
+): NotificationTopic | ValidationError => {
+  const topics = getNotificationTopics()
+  if (!topics.includes(t)) {
+    return new InvalidNotificationSettingsError(
+      `Invalid topic. Must be one of: ${topics.join(", ")}`,
+    )
+  }
+  return t as unknown as NotificationTopic
 }

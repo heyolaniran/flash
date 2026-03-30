@@ -4,6 +4,7 @@ import AllLevelsQuery from "./root/query/all-levels"
 import LightningInvoiceQuery from "./root/query/lightning-invoice"
 import LightningPaymentQuery from "./root/query/lightning-payment"
 import TransactionByIdQuery from "./root/query/transaction-by-id"
+import TransactionDetailsByIdQuery from "./root/query/transaction-details-by-id"
 import TransactionsByHashQuery from "./root/query/transactions-by-hash"
 import AccountDetailsByUserPhoneQuery from "./root/query/account-details-by-phone"
 import AccountDetailsByUsernameQuery from "./root/query/account-details-by-username"
@@ -12,6 +13,8 @@ import ListWalletIdsQuery from "./root/query/all-walletids"
 import WalletQuery from "./root/query/wallet"
 import AccountDetailsByAccountId from "./root/query/account-details-by-account-id"
 import MerchantsPendingApprovalQuery from "./root/query/merchants-pending-approval-listing"
+import IdDocumentReadUrlQuery from "./root/query/id-document-read-url"
+import NotificationTopicsQuery from "./root/query/notification-topics"
 
 export const queryFields = {
   unauthed: {},
@@ -22,12 +25,15 @@ export const queryFields = {
     accountDetailsByEmail: AccountDetailsByUserEmailQuery,
     accountDetailsByAccountId: AccountDetailsByAccountId,
     transactionById: TransactionByIdQuery,
+    transactionDetailsById: TransactionDetailsByIdQuery,
     transactionsByHash: TransactionsByHashQuery,
     lightningInvoice: LightningInvoiceQuery,
     lightningPayment: LightningPaymentQuery,
     listWalletIds: ListWalletIdsQuery,
     wallet: WalletQuery,
     merchantsPendingApproval: MerchantsPendingApprovalQuery,
+    idDocumentReadUrl: IdDocumentReadUrlQuery,
+    notificationTopics: NotificationTopicsQuery,
   },
 }
 

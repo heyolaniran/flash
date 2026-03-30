@@ -105,6 +105,7 @@ export const AccountsRepository = (): IAccountsRepository => {
     notificationSettings,
     npub,
     role,
+    erpParty,
   }: Account): Promise<Account | RepositoryError> => {
     try {
       const result = await Account.findOneAndUpdate(
@@ -116,6 +117,7 @@ export const AccountsRepository = (): IAccountsRepository => {
           title,
           username,
           contactEnabled,
+          erpParty,
           contacts: contacts.map(
             ({ username, alias, transactionsCount }: AccountContact) => ({
               id: username,
@@ -191,6 +193,7 @@ const translateToAccount = (result: AccountRecord): Account => ({
   username: result.username as Username,
   npub: result.npub as Npub,
   level: result.level as AccountLevel,
+  erpParty: result.erpParty,
   status: result.statusHistory.slice(-1)[0].status,
   statusHistory: (result.statusHistory || []) as AccountStatusHistory,
   title: result.title as BusinessMapTitle,

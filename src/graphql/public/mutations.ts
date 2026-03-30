@@ -25,6 +25,7 @@ import UserUpdateLanguageMutation from "@graphql/public/root/mutation/user-updat
 import UserUpdateUsernameMutation from "@graphql/public/root/mutation/user-update-username"
 import AccountUpdateDefaultWalletIdMutation from "@graphql/public/root/mutation/account-update-default-wallet-id"
 import AccountUpdateDisplayCurrencyMutation from "@graphql/public/root/mutation/account-update-display-currency"
+import BusinessAccountUpgradeRequestMutation from "@graphql/public/root/mutation/business-account-upgrade-request"
 import UserContactUpdateAliasMutation from "@graphql/public/root/mutation/user-contact-update-alias"
 import UserQuizQuestionUpdateCompletedMutation from "@graphql/public/root/mutation/user-quiz-question-update-completed"
 import OnChainPaymentSendMutation from "@graphql/public/root/mutation/onchain-payment-send"
@@ -58,6 +59,7 @@ import AccountDisableNotificationChannelMutation from "./root/mutation/account-d
 import UserUpdateNpubMutation from "./root/mutation/user-update-npub"
 import RequestCashoutMutation from "./root/mutation/offers/request-cash-out"
 import InitiateCashoutMutation from "./root/mutation/offers/initiate-cash-out"
+import IdDocumentUploadUrlGenerateMutation from "./root/mutation/id-document-upload-url-generate"
 
 // TODO: // const fields: { [key: string]: GraphQLFieldConfig<any, GraphQLPublicContext> }
 export const mutationFields = {
@@ -98,6 +100,7 @@ export const mutationFields = {
       userContactUpdateAlias: UserContactUpdateAliasMutation,
       accountUpdateDefaultWalletId: AccountUpdateDefaultWalletIdMutation,
       accountUpdateDisplayCurrency: AccountUpdateDisplayCurrencyMutation,
+      businessAccountUpgradeRequest: BusinessAccountUpgradeRequestMutation,
       accountEnableNotificationCategory: AccountEnableNotificationCategoryMutation,
       accountDisableNotificationCategory: AccountDisableNotificationCategoryMutation,
       accountEnableNotificationChannel: AccountEnableNotificationChannelMutation,
@@ -108,6 +111,8 @@ export const mutationFields = {
 
       callbackEndpointAdd: CallbackEndpointAdd,
       callbackEndpointDelete: CallbackEndpointDelete,
+
+      idDocumentUploadUrlGenerate: IdDocumentUploadUrlGenerateMutation,
     },
 
     atWalletLevel: {

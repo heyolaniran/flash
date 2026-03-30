@@ -9,7 +9,7 @@
     "build": "tsc -p tsconfig-build.json && cp -R src/services/price/protos lib/services/price/ && cp -R src/services/dealer-price/proto lib/services/dealer-price/ && cp -R src/services/loopd/protos lib/services/loopd/ && cp -R src/services/bria/proto lib/services/bria/ && tscpaths --silent -p tsconfig.json -s ./src -o ./lib",
     "trigger": "yarn build && node lib/servers/trigger.js | pino-pretty -c -l",
     "check:sdl": ". ./.env && yarn write-sdl && if git diff --name-only | grep -q 'src/graphql/admin/schema.graphql'; then echo 'Error: src/graphql/admin/schema.graphql has changes, run `make codegen` and re-recommit' >&2; exit 1; fi && if git diff --name-only | grep -q 'src/graphql/public/schema.graphql'; then echo 'Error: src/graphql/public/schema.graphql has changes, run `make codegen` and re-recommit' >&2; exit 1; fi",
-    "write-sdl": "yarn build && node lib/servers/write-sdl.js --configPath ./dev/defaults.yaml && rover supergraph compose --config dev/apollo-federation/supergraph-config.yaml --elv2-license accept > dev/apollo-federation/supergraph.graphql",
+    "write-sdl": "yarn build && node lib/servers/write-sdl.js --configPath ./dev/config/base-config.yaml && rover supergraph compose --config dev/apollo-federation/supergraph-config.yaml --elv2-license accept > dev/apollo-federation/supergraph.graphql",
     "ws": "yarn build && node lib/servers/ws-server.js | pino-pretty -c -l",
     "watch": "nodemon -V -e ts,graphql -w ./src -x yarn run start",
     "watch-trigger": "nodemon -V -e ts,graphql -w ./src -x yarn trigger",
@@ -30,9 +30,11 @@
     "gen-test-jwt": "ts-node ./dev/bin/gen-test-jwt.ts"
   },
   "engines": {
-    "node": "20"
+    "node": ">=20.18.1 <21"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.968.0",
+    "@aws-sdk/s3-request-presigner": "^3.968.0",
     "@google-cloud/storage": "^7.1.0",
     "@grpc/grpc-js": "^1.9.3",
     "@grpc/proto-loader": "^0.7.9",
@@ -51,6 +53,7 @@
     "@opentelemetry/sdk-trace-node": "^1.17.0",
     "@opentelemetry/semantic-conventions": "^1.17.0",
     "@ory/client": "^1.2.6",
+    "@sendgrid/mail": "^8.1.5",
     "@t3-oss/env-core": "^0.6.1",
     "ajv": "^8.12.0",
     "api": "^6.1.1",
@@ -106,10 +109,10 @@
     "lodash.mergewith": "^4.6.2",
     "lodash.sortby": "^4.7.0",
     "lodash.sumby": "^4.6.0",
-    "mailgun.js": "^12.0.1",
     "medici": "^6.2.0",
     "mongoose": "^7.8.4",
     "node-cache": "^5.1.2",
+    "nostr-tools": "^2.17.0",
     "pg": "^8.11.3",
     "pino": "8.21.0",
     "pino-http": "^8.5.0",
@@ -157,7 +160,6 @@
     "@types/lodash.mergewith": "^4.6.7",
     "@types/lodash.sortby": "^4.7.6",
     "@types/lodash.sumby": "^4.6.6",
-    "@types/mailgun-js": "^0.22.18",
     "@types/migrate-mongo": "^10.0.0",
     "@types/node": "^20.6.2",
     "@types/node-jose": "^1.1.10",

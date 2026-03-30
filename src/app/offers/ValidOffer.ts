@@ -1,24 +1,16 @@
-import { LedgerService } from "@services/ledger"
 import Offer from "./Offer"
 import { PaymentSendStatus } from "@domain/bitcoin/lightning"
-import { LedgerServiceError } from "@domain/ledger"
 import { ValidationError } from "@domain/shared"
-import {
-  accountLevel,
-  isActiveAccount,
-  isUsd,
-  hasSufficientBalance,
-  transferMin,
-  validate,
-  walletBelongsToAccount,
-  transferMax,
-  isBeforeExpiry,
-} from "./Validations"
+import { CashoutValidator } from "./Validator"
 import { RepositoryError } from "@domain/errors"
 import { AccountsRepository, WalletsRepository } from "@services/mongoose"
 import Ibex from "@services/ibex/client"
 import { EmailService } from "@services/email"
 import { CashoutDetails, ValidationInputs } from "./types"
+import ErpNext from "@services/frappe/ErpNext"
+import { JournalEntryDraftError, JournalEntrySubmitError } from "@services/frappe/errors"
+import { baseLogger } from "@services/logger"
+import { IbexError } from "@services/ibex/errors"
 
 // Only way to construct a ValidOffer is using the static method which contains validations
 class ValidOffer extends Offer {
@@ -42,48 +34,41 @@ class ValidOffer extends Offer {
     if (account instanceof RepositoryError) return new ValidationError(account)
 
     const inputs: ValidationInputs = { ...details, wallet, account }
-    const validationErrs = await validate(inputs, [
-      isUsd,
-      transferMin,
-      transferMax,
-      isActiveAccount,
-      accountLevel,
-      walletBelongsToAccount,
-      hasSufficientBalance,
-      isBeforeExpiry,
-      //  TODO daily/weekly/monthly volume limits
-    ])
-    if (validationErrs.length > 0) return new ValidationError(validationErrs)
+    const validation = await CashoutValidator(inputs)
 
-    return new ValidOffer(inputs)
+    if (Array.isArray(validation)) return new ValidationError(validation)
+
+    return new ValidOffer(validation)
   }
 
-  async execute(): Promise<PaymentSendStatus | Error> {
+  async execute(): Promise<InitiatedCashout | Error> {
+    const journal = await ErpNext.draftCashout(this)
+    if (journal instanceof JournalEntryDraftError) return journal
+    const id = journal.journalId
+
     const resp = await Ibex.payInvoice({
       accountId: this.details.ibexTrx.userAcct,
       invoice: this.details.ibexTrx.invoice.paymentRequest as unknown as Bolt11,
     })
-    if (resp instanceof Error) return resp
-
-    // balance the diff
-    // const ibexResp = await sendBetweenAccounts(
-    //   IbexAccount.fromWallet(this.wallet),
-    //   flashWallet,
-    //   this.details.ibexTransfer,
-    //   "Withdraw to bank",
-    // )
-    // if (ibexResp instanceof Error) return ibexResp
-
-    const ledgerResp = await LedgerService().recordCashOut(this.details)
-    if (ledgerResp instanceof LedgerServiceError) {
-      return ledgerResp // TODO: change to a log
+    if (resp instanceof IbexError) {
+      ErpNext.delete(id) // clean up accounting entry
+      return resp
     }
 
-    // move to NotificationService?
-    EmailService.sendCashoutInitiatedEmail(this.account.username, this.details)
+    const submitted = await ErpNext.submit(id)
+    if (submitted instanceof JournalEntrySubmitError) {
+      baseLogger.error({ submitted }, "Failed to submit journal after payment sent")
+    }
 
-    return PaymentSendStatus.Pending // awaiting rtgs transfer
+    return new InitiatedCashout(this, id) 
   }
 }
 
 export default ValidOffer
+
+
+
+export class InitiatedCashout {
+  readonly status = PaymentSendStatus.Pending
+  constructor(readonly offer: ValidOffer, readonly journalId: LedgerJournalId) {}
+}

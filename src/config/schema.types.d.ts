@@ -55,9 +55,8 @@ type CashoutEmail = {
   subject: string
 }
 
-type MailgunConfig = {
+type SendGridConfig = {
   apiKey: string
-  domain: string
 }
 
 type YamlSchema = {
@@ -210,7 +209,29 @@ type YamlSchema = {
     duration: number
     email: CashoutEmail
   }
-  mailgun: MailgunConfig
+  sendgrid: SendGridConfig
+  frappe: FrappeConfig
+  notificationTopics: string[]
+}
+
+type FrappeCredentials = {
+  apiKey: string
+  apiSecret: string
+}
+
+type FrappeConfig = {
+  url: string
+  sitename: string
+  credentials: FrappeCredentials
+  erpnext: {
+    accounts: {
+      ibex: {
+        operating: string
+      }
+      cashout: string
+      serviceFees: string
+    }
+  }
 }
 
 type CurrencyCode = string
