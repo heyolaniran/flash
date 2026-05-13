@@ -36,18 +36,33 @@ export const WalletsRepository = (): IWalletsRepository => {
   }: NewWalletInfo): Promise<Wallet | ApplicationError> => {
     const account = await AccountsRepository().findById(accountId)
     if (account instanceof Error) return account
-    
-    try {
-      const currencyId =
-        currency === WalletCurrency.Usdt ? USDTAmount.currencyId : USDAmount.currencyId
 
-      const resp = await Ibex.createAccount(accountId, currencyId)
-      if (resp instanceof IbexError) return resp
-      const ibexAccountId = resp.id 
- 
+    try {
+      let currencyId: IbexCurrencyId = USDAmount.currencyId as IbexCurrencyId
+      // get the USDT currency id from the ibex client if currency is USDT
+      if (currency === WalletCurrency.Usdt) {
+        const usdtCurrencyId = await Ibex.getIbexCurrencyId(WalletCurrency.Usdt)
+        if (usdtCurrencyId instanceof IbexError) return usdtCurrencyId
+        currencyId = usdtCurrencyId
+
+        console.log(`USDT currency id from Ibex: ${currencyId}`)
+      }
+
+      const resp = await Ibex.createIbexAccount(accountId, currencyId)
+      if (resp instanceof IbexError) {
+        console.log(`Failed to create Ibex account for accountId: ${accountId} and currency: ${currency}`, {
+          response: resp,
+        })
+
+        return resp
+      }
+      const ibexAccountId = resp.id
+
+      console.log(`Ibex account created with id: ${ibexAccountId} for accountId: ${accountId} and currency: ${currency}`)
+
       let lnurlp: string | undefined
       if (ibexAccountId !== undefined) {
-        const lnurlResp = await Ibex.createLnurlPay({ 
+        const lnurlResp = await Ibex.createLnurlPay({
           accountId: ibexAccountId,
           currencyId,
         })
@@ -63,7 +78,7 @@ export const WalletsRepository = (): IWalletsRepository => {
         }
         else lnurlp = lnurlResp.lnurl
       }
-      
+
       const wallet = new Wallet({
         _accountId: toObjectId<AccountId>(accountId),
         id: ibexAccountId,
