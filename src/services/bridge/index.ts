@@ -105,8 +105,6 @@ const ensureEthUsdtCashWallet = async (
   )
 
   if (!usdtWallet) {
-
-    console.log(`No USDT wallet found for account ${account.id}, creating one...`)
     const createdWallet = await WalletsRepository().persistNew({
       accountId: account.id,
       type: WalletType.Checking,
@@ -284,10 +282,6 @@ const createVirtualAccount = async (
         usdtCashWallet.id as IbexAccountId,
         option,
       )
-
-      console.log(`Received crypto receive info: ${JSON.stringify(receiveInfo)}`)
-
-      console.log(`Ethereum USDT address from Ibex: ${receiveInfo instanceof Error ? receiveInfo.message : receiveInfo.data.address}`)
       if (receiveInfo instanceof Error) return new BridgeError(receiveInfo.message)
 
       const updateResult = await AccountsRepository().updateBridgeFields(accountId, {
