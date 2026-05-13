@@ -45,6 +45,7 @@ import {
   CryptoReceiveOption,
   CryptoReceiveInfo,
   CreateCryptoReceiveInfoRequest,
+  IbexCurrency,
 } from "./types"
 import { USDAmount, USDTAmount, WalletCurrency } from "@domain/shared"
 import { baseLogger } from "@services/logger"
@@ -230,7 +231,7 @@ const payToLnurl = async (
 
 const getIbexToken = async (): Promise<string | IbexError> => {
   const cached = await Ibex.authentication.storage.getAccessToken()
-  if (typeof cached === "string") return `Bearer ${cached}`
+  if (typeof cached === "string") return `${cached}`
 
   // The SDK uses a single base URL for all calls, but the sandbox auth domain is separate
   const resp = await fetch(`${IbexConfig.url}/auth/signin`, {
@@ -258,7 +259,7 @@ const getIbexToken = async (): Promise<string | IbexError> => {
     await Ibex.authentication.storage.setRefreshToken(data.refreshToken, data.refreshTokenExpiresAt)
   }
 
-  return `Bearer ${data.accessToken}`
+  return data.accessToken as string
 }
 
 const ibexFetch = async <T>(
@@ -285,6 +286,24 @@ const ibexGet = <T>(token: string, path: string) =>
 const ibexPost = <T>(token: string, path: string, body: unknown) =>
   ibexFetch<T>(token, path, { method: "POST", body: JSON.stringify(body) })
 
+
+const createIbexAccount = async (
+  name: string,
+  currencyId: IbexCurrencyId,
+): Promise<CreateAccountResponse201 | IbexError> => {
+  try {
+    const token = await getIbexToken()
+    if (token instanceof IbexError) return token
+    const data = await ibexPost<CreateAccountResponse201>(
+      token,
+      "/account/create"
+      , { name, currencyId })
+    if (data instanceof IbexError) return data
+    return data
+  } catch (err) {
+    return new IbexError(err instanceof Error ? err : new Error(String(err)))
+  }
+}
 const getCryptoReceiveBalance = async (
   receiveInfoId: string,
 ): Promise<USDTAmount | IbexError> => {
@@ -308,12 +327,13 @@ const getCryptoReceiveOptions = async (): Promise<CryptoReceiveOption[] | IbexEr
   try {
     const token = await getIbexToken()
     if (token instanceof IbexError) return token
-    const data = await ibexGet<{ options: CryptoReceiveOption[] }>(
+    const data = await ibexGet<CryptoReceiveOption[]>(
       token,
       "/crypto/receive-infos/options",
     )
+
     if (data instanceof IbexError) return data
-    return data.options || []
+    return data
   } catch (err) {
     return new IbexError(err instanceof Error ? err : new Error(String(err)))
   }
@@ -332,36 +352,39 @@ const createCryptoReceiveInfo = async (
       { name: option.name, network: option.network } as CreateCryptoReceiveInfoRequest,
     )
     if (data instanceof IbexError) return data
-    if (!data.address) return new UnexpectedIbexResponse("Address not found")
+    if (!data.data.address) return new UnexpectedIbexResponse("Address not found")
     return data
   } catch (err) {
     return new IbexError(err instanceof Error ? err : new Error(String(err)))
   }
 }
 
-const getTronUsdtOption = async (): Promise<string | IbexError> => {
+const getTronUsdtOption = async (): Promise<CryptoReceiveOption | IbexError> => {
   const options = await getCryptoReceiveOptions()
   if (options instanceof IbexError) return options
 
   const tronUsdt = options.find(
     (opt) =>
-      opt.currency.toLowerCase() === "usdt" && opt.network.toLowerCase() === "tron",
+      opt.currencyId === USDTAmount.currencyId && opt.network.toLowerCase() === "tron",
   )
 
   if (!tronUsdt) {
     return new IbexError(new Error("Tron USDT option not found"))
   }
 
-  return tronUsdt.id
+  return tronUsdt
 }
 
 const getEthereumUsdtOption = async (): Promise<CryptoReceiveOption | IbexError> => {
   const options = await getCryptoReceiveOptions()
   if (options instanceof IbexError) return options
 
+  const UsdtCurrencyId = await getIbexCurrencyId(WalletCurrency.Usdt)
+  if (UsdtCurrencyId instanceof IbexError) return UsdtCurrencyId as IbexError
+
   const ethereumUsdt = options.find(
     (opt) =>
-      opt.currency.toLowerCase() === "usdt" && opt.network.toLowerCase() === "ethereum",
+      opt.currencyId === UsdtCurrencyId && opt.network.toLowerCase() === "ethereum",
   )
 
   if (!ethereumUsdt) {
@@ -369,6 +392,16 @@ const getEthereumUsdtOption = async (): Promise<CryptoReceiveOption | IbexError>
   }
 
   return ethereumUsdt
+}
+
+const getIbexCurrencyId = async (
+  currency: WalletCurrency,
+): Promise<IbexCurrencyId | IbexError> => {
+  const data = await ibexGet<{ currencies: IbexCurrency[] }>("", "/currency/all")
+  if (data instanceof IbexError) return data
+  const currencyId = data.currencies.find((c) => c.name === currency)?.id
+  if (!currencyId) return new IbexError(new Error(`Currency ${currency} not found`))
+  return currencyId
 }
 
 // const sendBetweenAccounts = async (
@@ -408,10 +441,12 @@ export default wrapAsyncFunctionsToRunInSpan({
     createLnurlPay,
     decodeLnurl,
     payToLnurl,
+    createIbexAccount,
     getCryptoReceiveBalance,
     getCryptoReceiveOptions,
     createCryptoReceiveInfo,
     getTronUsdtOption,
     getEthereumUsdtOption,
+    getIbexCurrencyId,
   },
 })
