@@ -7,8 +7,8 @@ export type PayInvoiceArgs = {
 }
 
 export type SendOnchainArgs = {
-  accountId: IbexAccountId, // source of funds
-  address: OnChainAddress, // destination
+  accountId: IbexAccountId // source of funds
+  address: OnChainAddress // destination
   amount: USDAmount
 }
 

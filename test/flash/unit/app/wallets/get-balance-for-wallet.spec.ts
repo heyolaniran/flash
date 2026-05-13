@@ -18,7 +18,7 @@ describe("getBalanceForWallet", () => {
   it("reads USDT wallet balances from the IBEX account details endpoint", async () => {
     const balance = USDTAmount.fromNumber("12.34")
     expect(balance).not.toBeInstanceOf(Error)
-    ;(Ibex.getAccountDetails as jest.Mock).mockResolvedValue({ balance })
+      ; (Ibex.getAccountDetails as jest.Mock).mockResolvedValue({ balance })
 
     const result = await getBalanceForWallet({
       walletId: WALLET_ID,
@@ -33,7 +33,7 @@ describe("getBalanceForWallet", () => {
     const notFound = Object.assign(new IbexError(new Error("not found")), {
       httpCode: 404,
     })
-    ;(Ibex.getAccountDetails as jest.Mock).mockResolvedValue(notFound)
+      ; (Ibex.getAccountDetails as jest.Mock).mockResolvedValue(notFound)
 
     const result = await getBalanceForWallet({
       walletId: WALLET_ID,
@@ -47,7 +47,7 @@ describe("getBalanceForWallet", () => {
     const notFound = Object.assign(new IbexError(new Error("not found")), {
       httpCode: 404,
     })
-    ;(Ibex.getAccountDetails as jest.Mock).mockResolvedValue(notFound)
+      ; (Ibex.getAccountDetails as jest.Mock).mockResolvedValue(notFound)
 
     const result = await getBalanceForWallet({
       walletId: WALLET_ID,
