@@ -45,7 +45,6 @@ export const WalletsRepository = (): IWalletsRepository => {
         if (usdtCurrencyId instanceof IbexError) return usdtCurrencyId
         currencyId = usdtCurrencyId
 
-        console.log(`USDT currency id from Ibex: ${currencyId}`)
       }
 
       const resp = await Ibex.createIbexAccount(accountId, currencyId)
@@ -57,8 +56,6 @@ export const WalletsRepository = (): IWalletsRepository => {
         return resp
       }
       const ibexAccountId = resp.id
-
-      console.log(`Ibex account created with id: ${ibexAccountId} for accountId: ${accountId} and currency: ${currency}`)
 
       let lnurlp: string | undefined
       if (ibexAccountId !== undefined) {
