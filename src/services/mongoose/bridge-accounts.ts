@@ -205,8 +205,16 @@ export const updateWithdrawalStatus = async (
     const existing = await BridgeWithdrawal.findOne({ bridgeTransferId })
     if (!existing) return new RepositoryError(BRIDGE_WITHDRAWAL_NOT_FOUND)
 
-    // Idempotent: duplicate webhook after we already reached this terminal status.
-    if (existing.status === status) return existing
+    // Idempotent completion replay: return the row without error so the handler can
+    // rely on the idempotency lock to suppress duplicate notifications.
+    if (existing.status === status && status === "completed") return existing
+
+    // Duplicate failure webhook: surface as already-terminal to the handler.
+    if (existing.status === status && status === "failed") {
+      return new RepositoryError(
+        `Withdrawal already ${existing.status}, cannot transition to ${status}`,
+      )
+    }
 
     return new RepositoryError(
       `Withdrawal already ${existing.status}, cannot transition to ${status}`,

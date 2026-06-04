@@ -58,11 +58,12 @@ const resolveReplayEventType = ({
   const routeFromEventType = toRouteKey(eventType)
   if (routeFromEventType) return eventType
 
+  if (eventObjectStatus && isOutboundBridgeWithdrawal(eventObject)) {
+    const transferEvent = transferReplayEventTypeForStatus(eventObjectStatus)
+    if (transferEvent) return transferEvent
+  }
+
   if (eventObjectStatus && DEPOSIT_EVENT_TYPES.has(eventObjectStatus)) {
-    if (isOutboundBridgeWithdrawal(eventObject)) {
-      const transferEvent = transferReplayEventTypeForStatus(eventObjectStatus)
-      if (transferEvent) return transferEvent
-    }
     return eventObjectStatus
   }
 
